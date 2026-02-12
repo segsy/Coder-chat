@@ -1,0 +1,10 @@
+{
+  "expo": {
+    "name": "Coder Chat Mobile",
+    "slug": "coder-chat-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": ["**/*"]
+  }
+}
