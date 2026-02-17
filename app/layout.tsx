@@ -3,8 +3,8 @@ import './globals.css';
 import { ClerkProvider } from '@clerk/nextjs';
 
 export const metadata: Metadata = {
-  title: 'AI Website Generator SaaS',
-  description: 'Generate and edit full websites with AI, no-code style iteration, and one-click publish.'
+  title: 'AI Video Educational Course Generator SaaS',
+  description: 'Production-style SaaS app to generate educational video courses with AI agents, Stripe billing, Clerk auth, and Neon/Drizzle persistence.'
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
