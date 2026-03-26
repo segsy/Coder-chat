@@ -1,13 +1,63 @@
 import { boolean, integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
+export const workspaces = pgTable('workspaces', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  clerkUserId: text('clerk_user_id').notNull(),
+  name: text('name').notNull().default('My Workspace'),
+  slug: text('slug').notNull().unique(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
   clerkUserId: text('clerk_user_id').notNull().unique(),
+  workspaceId: uuid('workspace_id').references(() => workspaces.id),
   email: text('email').notNull(),
   firstName: text('first_name'),
   lastName: text('last_name'),
   imageUrl: text('image_url'),
   plan: text('plan').notNull().default('free'),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
+// AI Website Generator - Projects Table
+export const projects = pgTable('projects', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  clerkUserId: text('clerk_user_id').notNull(),
+  name: text('name').notNull(),
+  prompt: text('prompt').notNull(),
+  generatedCode: text('generated_code'),
+  thumbnailUrl: text('thumbnail_url'),
+  status: text('status').notNull().default('draft'), // draft, generating, published
+  publishedUrl: text('published_url'),
+  creditsUsed: integer('credits_used').notNull().default(0),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+// AI Website Generator - Credits Table
+export const credits = pgTable('credits', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  clerkUserId: text('clerk_user_id').notNull().unique(),
+  totalCredits: integer('total_credits').notNull().default(2), // Free tier: 2 credits
+  usedCredits: integer('used_credits').notNull().default(0),
+  plan: text('plan').notNull().default('free'), // free, pro, enterprise
+  stripeCustomerId: text('stripe_customer_id'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+// AI Website Generator - Image Transformations Table
+export const imageTransformations = pgTable('image_transformations', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  clerkUserId: text('clerk_user_id').notNull(),
+  projectId: uuid('project_id'),
+  originalUrl: text('original_url').notNull(),
+  transformedUrl: text('transformed_url'),
+  transformationType: text('transformation_type').notNull(), // resize, remove-bg, enhance
+  transformationParams: jsonb('transformation_params'),
+  creditsUsed: integer('credits_used').notNull().default(1),
   createdAt: timestamp('created_at').notNull().defaultNow()
 });
 

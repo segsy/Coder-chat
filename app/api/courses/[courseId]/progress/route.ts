@@ -6,7 +6,7 @@ import { aiJobs, courseProgress, courses, jobSteps } from '@/lib/db/schema';
 
 const canUseDb = Boolean(process.env.DATABASE_URL);
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+export async function GET(_: Request, { params }: { params: { courseId: string } }) {
   if (!canUseDb) {
     return NextResponse.json({ percent: 0, progress: 0, step: 'idle', message: 'Database not configured.', status: 'idle' });
   }
@@ -19,7 +19,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   const ownCourse = await db
     .select()
     .from(courses)
-    .where(and(eq(courses.id, params.id), eq(courses.clerkUserId, user.id)))
+    .where(and(eq(courses.id, params.courseId), eq(courses.clerkUserId, user.id)))
     .limit(1);
 
   if (!ownCourse[0]) {
@@ -27,8 +27,8 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   }
 
   const [progressRow, latestJob] = await Promise.all([
-    db.select().from(courseProgress).where(eq(courseProgress.courseId, params.id)).limit(1),
-    db.select().from(aiJobs).where(eq(aiJobs.courseId, params.id)).orderBy(desc(aiJobs.createdAt)).limit(1)
+    db.select().from(courseProgress).where(eq(courseProgress.courseId, params.courseId)).limit(1),
+    db.select().from(aiJobs).where(eq(aiJobs.courseId, params.courseId)).orderBy(desc(aiJobs.createdAt)).limit(1)
   ]);
 
   const latest = latestJob[0];

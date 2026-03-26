@@ -1,18 +1,32 @@
-import type { Metadata } from 'next';
-import './globals.css';
-import { ClerkProvider } from '@clerk/nextjs';
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
+import { Header } from './header'
+import { Providers } from './providers'
+
+const inter = Inter({
+  variable: '--font-inter',
+  subsets: ['latin'],
+})
 
 export const metadata: Metadata = {
-  title: 'AI Video Educational Course Generator SaaS',
-  description: 'Production-style SaaS app to generate educational video courses with AI agents, Stripe billing, Clerk auth, and Neon/Drizzle persistence.'
-};
+  title: 'Nexus AI builder. Websites, apps & prototypes',
+  description: 'AI Powered Website and apps generation',
+}
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body>{children}</body>
-      </html>
-    </ClerkProvider>
-  );
+    <html lang="en">
+      <body className={`${inter.variable} antialiased`}>
+        <Providers>
+          <Header />
+          {children}
+        </Providers>
+      </body>
+    </html>
+  )
 }

@@ -5,7 +5,7 @@ import { and, eq } from 'drizzle-orm';
 import { currentUser } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
-import { courseListings, tenantListings, tenants } from '@/lib/db/schema';
+import { courseListings, tenantCourses, tenants } from '@/lib/db/schema';
 
 const canUseDb = Boolean(process.env.DATABASE_URL);
 
@@ -13,15 +13,20 @@ function slugify(input: string) {
   return input.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 }
 
-export async function createTenantPortal(formData: FormData) {
-  if (!canUseDb) throw new Error('DATABASE_URL is not configured.');
+type FormState = {
+  success?: boolean;
+  error?: string;
+};
+
+export async function createTenantPortal(state: FormState, formData: FormData): Promise<FormState> {
+  if (!canUseDb) return { error: 'DATABASE_URL is not configured.' };
 
   const user = await currentUser();
-  if (!user) throw new Error('Unauthorized');
+  if (!user) return { error: 'Unauthorized' };
 
   const name = String(formData.get('name') || '').trim();
   const slugInput = String(formData.get('slug') || '').trim();
-  if (!name) throw new Error('Tenant name is required.');
+  if (!name) return { error: 'Tenant name is required.' };
 
   const slug = slugify(slugInput || name) || `tenant-${randomUUID().slice(0, 6)}`;
 
@@ -37,12 +42,13 @@ export async function createTenantPortal(formData: FormData) {
   });
 
   revalidatePath('/tenant-admin');
+  return { success: true };
 }
 
-export async function connectTenantDomain(formData: FormData) {
-  if (!canUseDb) throw new Error('DATABASE_URL is not configured.');
+export async function connectTenantDomain(state: FormState, formData: FormData): Promise<FormState> {
+  if (!canUseDb) return { error: 'DATABASE_URL is not configured.' };
   const user = await currentUser();
-  if (!user) throw new Error('Unauthorized');
+  if (!user) return { error: 'Unauthorized' };
 
   const tenantId = String(formData.get('tenantId') || '');
   const customDomain = String(formData.get('customDomain') || '').trim().toLowerCase();
@@ -53,16 +59,17 @@ export async function connectTenantDomain(formData: FormData) {
     .where(and(eq(tenants.id, tenantId), eq(tenants.ownerClerkUserId, user.id)))
     .limit(1);
 
-  if (!tenant) throw new Error('Tenant not found.');
+  if (!tenant) return { error: 'Tenant not found.' };
 
   await db.update(tenants).set({ customDomain: customDomain || null }).where(eq(tenants.id, tenant.id));
   revalidatePath('/tenant-admin');
+  return { success: true };
 }
 
-export async function updateTenantTheme(formData: FormData) {
-  if (!canUseDb) throw new Error('DATABASE_URL is not configured.');
+export async function updateTenantTheme(state: FormState, formData: FormData): Promise<FormState> {
+  if (!canUseDb) return { error: 'DATABASE_URL is not configured.' };
   const user = await currentUser();
-  if (!user) throw new Error('Unauthorized');
+  if (!user) return { error: 'Unauthorized' };
 
   const tenantId = String(formData.get('tenantId') || '');
   const brand = String(formData.get('brand') || '#2563eb');
@@ -75,16 +82,17 @@ export async function updateTenantTheme(formData: FormData) {
     .where(and(eq(tenants.id, tenantId), eq(tenants.ownerClerkUserId, user.id)))
     .limit(1);
 
-  if (!tenant) throw new Error('Tenant not found.');
+  if (!tenant) return { error: 'Tenant not found.' };
 
   await db.update(tenants).set({ themeJson: { brand, background, foreground } }).where(eq(tenants.id, tenant.id));
   revalidatePath('/tenant-admin');
+  return { success: true };
 }
 
-export async function curateTenantListing(formData: FormData) {
-  if (!canUseDb) throw new Error('DATABASE_URL is not configured.');
+export async function curateTenantListing(state: FormState, formData: FormData): Promise<FormState> {
+  if (!canUseDb) return { error: 'DATABASE_URL is not configured.' };
   const user = await currentUser();
-  if (!user) throw new Error('Unauthorized');
+  if (!user) return { error: 'Unauthorized' };
 
   const tenantId = String(formData.get('tenantId') || '');
   const listingId = String(formData.get('listingId') || '');
@@ -96,22 +104,23 @@ export async function curateTenantListing(formData: FormData) {
     .where(and(eq(tenants.id, tenantId), eq(tenants.ownerClerkUserId, user.id)))
     .limit(1);
 
-  if (!tenant) throw new Error('Tenant not found.');
+  if (!tenant) return { error: 'Tenant not found.' };
 
   const [listing] = await db.select().from(courseListings).where(eq(courseListings.id, listingId)).limit(1);
-  if (!listing) throw new Error('Listing not found.');
+  if (!listing) return { error: 'Listing not found.' };
 
   const existing = await db
     .select()
-    .from(tenantListings)
-    .where(and(eq(tenantListings.tenantId, tenant.id), eq(tenantListings.listingId, listing.id)))
+    .from(tenantCourses)
+    .where(and(eq(tenantCourses.tenantId, tenant.id), eq(tenantCourses.courseId, listing.id)))
     .limit(1);
 
   if (!existing[0]) {
-    await db.insert(tenantListings).values({ tenantId: tenant.id, listingId: listing.id, published: publish });
+    await db.insert(tenantCourses).values({ tenantId: tenant.id, courseId: listing.id, published: publish });
   } else {
-    await db.update(tenantListings).set({ published: publish }).where(eq(tenantListings.id, existing[0].id));
+    await db.update(tenantCourses).set({ published: publish }).where(eq(tenantCourses.id, existing[0].id));
   }
 
   revalidatePath('/tenant-admin');
+  return { success: true };
 }
